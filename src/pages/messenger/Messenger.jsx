@@ -1,5 +1,5 @@
 import Conversations from "../../components/messenger/Conversations";
-import Message from "../../components/messenger/message";
+import Message from "../../components/messenger/Message";
 
 const Messenger = () => {
   return (
