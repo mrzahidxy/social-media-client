@@ -2,8 +2,8 @@ const Message = () => {
     return (
       <div className="flex flex-col gap-2 pt-2 px-2 bg-gray-100 pb-12">
         {[1, 2, 3, 4, 5].map((c) => (
-          <>
-            <div className="flex justify-end" key={Math.random()}>
+          <div key={c}>
+            <div className="flex justify-end" >
               <span className="bg-blue-400 text-white px-4 py-1 rounded-md">
                 Fine, you?
               </span>
@@ -13,7 +13,7 @@ const Message = () => {
                 Hi, How are you?
               </span>
             </div>
-          </>
+          </div>
         ))}
       </div>
     );

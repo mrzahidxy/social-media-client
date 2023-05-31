@@ -23,7 +23,7 @@ const Messenger = () => {
         </div>
         <div className="space-y-1">
           {[1, 2, 3, 4, 5].map((c) => (
-            <Conversations />
+            <Conversations key={c} />
           ))}
         </div>
       </div>
@@ -48,7 +48,7 @@ const Messenger = () => {
       </div>
       <div className="space-y-2 hidden lg:block">
         {[1, 2, 3, 4, 5].map((u) => (
-          <div className="flex flex-row items-center gap-5">
+          <div className="flex flex-row items-center gap-5" key={u}>
             <img
               src="https://picsum.photos/id/14/50"
               alt=""
