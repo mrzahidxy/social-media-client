@@ -1,24 +1,40 @@
 import { ErrorMessage, Field, Form, Formik } from "formik";
 import * as Yup from "yup";
 import mainBanner from "../../assets/images/main-banner.jpg";
+import { publicRequest } from "../../utils/requestMethod";
+import { useContext } from "react";
+import { AuthContext } from "../../context/AuthProvider";
+import { useNavigate } from "react-router-dom";
 
 const validationSchema = Yup.object().shape({
-  email: Yup.string()
-    .email("Invalid email address")
-    .required("Email is required"),
-  password: Yup.string()
-    .required("Password is required")
-    .min(6, "Password must be at least 6 characters long"),
+  username: Yup.string().required("Username is required"),
+  password: Yup.string().required("Password is required"),
 });
 
 const Login = () => {
+  const { dispatch } = useContext(AuthContext);
+  const navigate = useNavigate();
   const initialValues = {
-    email: "",
+    username: "",
     password: "",
   };
-  const handleSubmit = (values) => {
-    console.log(values);
+
+  const handleSubmit = async (values, { setSubmitting }) => {
+    try {
+      setSubmitting(true);
+      const res = await publicRequest.post("/auth/login", values);
+      dispatch({
+        type: "LOGIN",
+        payload: res.data,
+      });
+      navigate("/messenger");
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setSubmitting(false);
+    }
   };
+
   return (
     <div className="grid grid-cols-2">
       <div className="flex justify-center items-center">
@@ -36,21 +52,19 @@ const Login = () => {
             validationSchema={validationSchema}
             onSubmit={handleSubmit}
           >
-            {() => (
+            {({ isSubmitting }) => (
               <Form className="space-y-1 w-80">
                 <div className="space-x-2 grid grid-cols-4">
                   <label htmlFor="email" className="text-gray-800">
-                    Email:
+                    Username:
                   </label>
                   <Field
-                    type="email"
-                    id="email"
-                    name="email"
-                    placeholder="Enter your email"
+                    name="username"
+                    placeholder="Enter your username"
                     className="col-span-3 py-1 border rounded-sm outline-none pl-2 focus:border-blue-600"
                   />
                   <ErrorMessage
-                    name="email"
+                    name="username"
                     component="div"
                     className="col-start-2 col-span-3 text-red-500"
                   />
@@ -61,7 +75,6 @@ const Login = () => {
                   </label>
                   <Field
                     type="password"
-                    id="password"
                     name="password"
                     placeholder="Enter your password"
                     className="col-span-3 py-1 border rounded-sm outline-none pl-2 focus:border-blue-600"
@@ -75,9 +88,10 @@ const Login = () => {
                 <div className="flex justify-center">
                   <button
                     type="submit"
+                    disabled={isSubmitting}
                     className="bg-blue-400 text-white px-8 py-1 rounded-sm"
                   >
-                    Login
+                    {isSubmitting ? "Loading...." : "Login"}
                   </button>
                 </div>
               </Form>
