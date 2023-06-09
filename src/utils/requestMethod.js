@@ -1,10 +1,9 @@
 import axios from "axios";
 
 const BASE_URL = "https://social-media-api-zahid.vercel.app/api/";
-const user = JSON.parse(localStorage.getItem("user"));
+const user = JSON.parse(localStorage.getItem("currentUser"));
 const TOKEN = user?.accessToken;
-
-console.log("token", user);
+console.log("token", TOKEN);
 
 export const publicRequest = axios.create({
   baseURL: BASE_URL,
