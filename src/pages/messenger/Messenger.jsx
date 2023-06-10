@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import Conversations from "../../components/messenger/Conversations";
 import Message from "../../components/messenger/Message";
 import { AuthContext } from "../../context/AuthProvider";
@@ -9,8 +9,10 @@ import { privateRequest } from "../../utils/requestMethod";
 const Messenger = () => {
   const { currentUser, dispatch } = useContext(AuthContext);
   const [conversationId, setConversationId] = useState(null);
+  const [message, setMessage] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState(null);
+  const [messageByUser, setMessageByUser] = useState("");
 
   // FETCHING CONVERSATION
   const { data, error, loading } = useQuery({
@@ -29,7 +31,6 @@ const Messenger = () => {
       console.log("Find Friemd ::: >>>", error);
     }
   };
-  console.log("Serach Results", searchResults);
 
   // CRAETE CONVERSATION
   const createConversation = async () => {
@@ -42,6 +43,35 @@ const Messenger = () => {
       console.log("create conversations ::: >>>", error);
     }
   };
+
+  // FETCHING MESSEGE
+  const getMessageByConversation = async () => {
+    try {
+      const res = await privateRequest.get(`/message/${conversationId}`);
+      setMessage(res.data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    getMessageByConversation();
+  }, [conversationId]);
+
+  // SENT MESSAGE
+  const sentMessage = async () => {
+    try {
+      await privateRequest.post("/message/", {
+        conversationId: conversationId,
+        sender: currentUser._id,
+        text: messageByUser,
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  console.log(messageByUser);
 
   return (
     <div className="grid md:grid-cols-2 lg:grid-cols-3">
@@ -80,7 +110,7 @@ const Messenger = () => {
               Search
             </button>
           </div>
-          {searchResults? (
+          {searchResults ? (
             <div
               key={searchResults._id}
               className="text-semibold"
@@ -88,7 +118,9 @@ const Messenger = () => {
             >
               {searchResults.username}
             </div>
-          ) : "Not Found"}
+          ) : (
+            "Not Found"
+          )}
         </div>
         <div className="space-y-1">
           {data
@@ -103,7 +135,7 @@ const Messenger = () => {
             : "Loading....."}
         </div>
       </div>
-      <div className="px-2 w-full">
+      <div className="px-2 w-full flex flex-col h-full">
         <div className="flex flex-row items-center gap-5">
           <img
             src="https://picsum.photos/id/14/50"
@@ -114,27 +146,57 @@ const Messenger = () => {
             Zahid Hasan
           </span>
         </div>
-        <Message />
-        <div className="flex flex-row">
-          <textarea className="w-full border focus:outline-blue-200" />
-          <button className="bg-blue-400 text-white px-4 rounded-r-lg">
-            Send
-          </button>
-        </div>
+        <>
+          <div className="flex flex-col gap-2">
+            {message.length > 0 ? (
+              message.map((m) => (
+                <Message
+                  message={m}
+                  own={m.sender === currentUser._id}
+                  key={m._id}
+                />
+              ))
+            ) : (
+              <div className="text-center font-bold text-gray-400">
+                Start a conversation
+              </div>
+            )}
+          </div>
+          <div className="flex flex-row mt-auto">
+            <textarea
+              className="w-full border focus:outline-blue-200"
+              onChange={(e) => setMessageByUser(e.target.value)}
+            />
+            <button
+              className="bg-blue-400 text-white px-4 rounded-r-lg"
+              onClick={() => sentMessage()}
+            >
+              Send
+            </button>
+          </div>
+        </>
       </div>
       <div className="space-y-2 hidden lg:block">
-        {[1, 2, 3, 4, 5].map((u) => (
-          <div className="flex flex-row items-center gap-5" key={u}>
-            <img
-              src="https://picsum.photos/id/14/50"
-              alt=""
-              className="rounded-full"
-            />
-            <span className="text-l font-semibold text-gray-800">
-              Zahid Hasan
-            </span>
-          </div>
-        ))}
+        <div className="flex flex-row items-center gap-5">
+          <img
+            src="https://picsum.photos/id/14/50"
+            alt=""
+            className="rounded-full"
+          />
+          <span className="text-l font-semibold text-gray-800">
+            Zahid Hasan
+          </span>
+        </div>
+        <div className="flex flex-row items-center gap-5">
+          <img
+            src="https://picsum.photos/id/14/50"
+            alt=""
+            className="rounded-full"
+          />
+          <span className="text-l font-semibold text-gray-800">
+            Zahid Hasan
+          </span>
+        </div>
       </div>
     </div>
   );
