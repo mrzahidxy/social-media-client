@@ -10,18 +10,35 @@ import OnlineUser from "../../components/messenger/OnlineUser";
 
 const Messenger = () => {
   const { currentUser, dispatch } = useContext(AuthContext);
-  const [conversationId, setConversationId] = useState(null);
-  const [message, setMessage] = useState([]);
+  const [conversation, setConversation] = useState(null);
+  const [messages, setMessages] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState(null);
-  const [messageByUser, setMessageByUser] = useState("");
+  const [newMessage, setNewMessage] = useState("");
+  const [arrivalMessgae, setArraivalMessage] = useState(null);
   const [users, setUsers] = useState([]);
   const [onlineUser, setOnlineUser] = useState(null);
   const socket = useRef();
 
   useEffect(() => {
     socket.current = io("ws://localhost:8900");
+
+    socket.current.on("getMessage", (data) => {
+      setArraivalMessage({
+        sender: data.senderId,
+        text: data.text,
+        createdAt: Date.now(),
+      });
+    });
   }, []);
+
+  useEffect(() => {
+    arrivalMessgae &&
+      conversation?.members.includes(arrivalMessgae?.sender) &&
+      setMessages((prev) => [...prev, arrivalMessgae]);
+  }, [arrivalMessgae, conversation]);
+
+  console.log(arrivalMessgae);
 
   useEffect(() => {
     socket.current.emit("addUser", currentUser._id);
@@ -63,8 +80,8 @@ const Messenger = () => {
   // FETCHING MESSEGE
   const getMessageByConversation = async () => {
     try {
-      const res = await privateRequest.get(`/message/${conversationId}`);
-      setMessage(res.data);
+      const res = await privateRequest.get(`/message/${conversation?._id}`);
+      setMessages(res.data);
     } catch (error) {
       console.log(error);
     }
@@ -72,16 +89,28 @@ const Messenger = () => {
 
   useEffect(() => {
     getMessageByConversation();
-  }, [conversationId]);
+  }, [conversation]);
 
   // SENT MESSAGE
   const sentMessage = async () => {
+    const receiverId = conversation?.members.find(
+      (member) => member !== currentUser._id
+    );
+
+    socket.current.emit("sendMessage", {
+      senderId: currentUser?._id,
+      receiverId,
+      text: newMessage,
+    });
+
     try {
-      await privateRequest.post("/message/", {
-        conversationId: conversationId,
+      const res = await privateRequest.post("/message/", {
+        conversationId: conversation?._id,
         sender: currentUser._id,
-        text: messageByUser,
+        text: newMessage,
       });
+      setMessages([...messages, res.data]);
+      setNewMessage("");
     } catch (error) {
       console.log(error);
     }
@@ -154,7 +183,7 @@ const Messenger = () => {
           {data
             ? data?.data?.map((conversation) => (
                 <div
-                  onClick={() => setConversationId(conversation?._id)}
+                  onClick={() => setConversation(conversation)}
                   key={conversation._id}
                 >
                   <Conversations conversation={conversation} />
@@ -176,8 +205,8 @@ const Messenger = () => {
         </div>
         <>
           <div className="flex flex-col gap-2">
-            {message.length > 0 ? (
-              message.map((m) => (
+            {messages.length > 0 ? (
+              messages.map((m) => (
                 <Message
                   message={m}
                   own={m.sender === currentUser._id}
@@ -193,11 +222,12 @@ const Messenger = () => {
           <div className="flex flex-row mt-auto">
             <textarea
               className="w-full border focus:outline-blue-200"
-              onChange={(e) => setMessageByUser(e.target.value)}
+              onChange={(e) => setNewMessage(e.target.value)}
+              value={newMessage}
             />
             <button
               className="bg-blue-400 text-white px-4 rounded-r-lg"
-              onClick={() => sentMessage()}
+              onClick={sentMessage}
             >
               Send
             </button>
@@ -208,7 +238,7 @@ const Messenger = () => {
         {users.length > 0 &&
           onlineUser
             .filter((u) => u._id !== currentUser._id)
-            .map((u) => <OnlineUser user={u} />)}
+            .map((u) => <OnlineUser user={u} key={Math.random()} />)}
       </div>
     </div>
   );

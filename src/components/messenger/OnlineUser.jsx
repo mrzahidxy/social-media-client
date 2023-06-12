@@ -24,10 +24,7 @@ const OnlineUser = ({ user }) => {
   }, [user, currentUser]);
 
   return (
-    <div
-      className="flex flex-row items-center gap-5 relative"
-      key={Math.random()}
-    >
+    <div className="flex flex-row items-center gap-5 relative">
       <img
         src="https://picsum.photos/id/14/50"
         alt=""
