@@ -5,6 +5,8 @@ import { AuthContext } from "../../context/AuthProvider";
 import { useQuery } from "react-query";
 import messengerServices from "../../services/messengerSrvices";
 import { privateRequest } from "../../utils/requestMethod";
+import { io } from "socket.io-client";
+import OnlineUser from "../../components/messenger/OnlineUser";
 
 const Messenger = () => {
   const { currentUser, dispatch } = useContext(AuthContext);
@@ -13,6 +15,20 @@ const Messenger = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState(null);
   const [messageByUser, setMessageByUser] = useState("");
+  const [users, setUsers] = useState([]);
+  const [onlineUser, setOnlineUser] = useState(null);
+  const socket = useRef();
+
+  useEffect(() => {
+    socket.current = io("ws://localhost:8900");
+  }, []);
+
+  useEffect(() => {
+    socket.current.emit("addUser", currentUser._id);
+    socket.current.on("getUsers", (users) => {
+      setOnlineUser(users);
+    });
+  }, [currentUser]);
 
   // FETCHING CONVERSATION
   const { data, error, loading } = useQuery({
@@ -71,7 +87,19 @@ const Messenger = () => {
     }
   };
 
-  console.log(messageByUser);
+  // All Friend
+  const AllFriend = async () => {
+    try {
+      const res = await privateRequest.get(`/users/`);
+      setUsers(res.data);
+    } catch (error) {
+      console.log("Friends ::: >>>", error);
+    }
+  };
+
+  useEffect(() => {
+    AllFriend();
+  }, []);
 
   return (
     <div className="grid md:grid-cols-2 lg:grid-cols-3">
@@ -177,26 +205,10 @@ const Messenger = () => {
         </>
       </div>
       <div className="space-y-2 hidden lg:block">
-        <div className="flex flex-row items-center gap-5">
-          <img
-            src="https://picsum.photos/id/14/50"
-            alt=""
-            className="rounded-full"
-          />
-          <span className="text-l font-semibold text-gray-800">
-            Zahid Hasan
-          </span>
-        </div>
-        <div className="flex flex-row items-center gap-5">
-          <img
-            src="https://picsum.photos/id/14/50"
-            alt=""
-            className="rounded-full"
-          />
-          <span className="text-l font-semibold text-gray-800">
-            Zahid Hasan
-          </span>
-        </div>
+        {users.length > 0 &&
+          onlineUser
+            .filter((u) => u._id !== currentUser._id)
+            .map((u) => <OnlineUser user={u} />)}
       </div>
     </div>
   );
